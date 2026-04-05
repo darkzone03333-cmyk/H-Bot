@@ -30,6 +30,15 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Provider resolution
 # ---------------------------------------------------------------------------
+# Reverse mapping: URL -> provider name (for auto-detection)
+URL_TO_PROVIDER: dict[str, str] = {
+    "https://openrouter.ai/api/v1": "openrouter",
+    "https://api.openai.com/v1": "openai",
+    "https://integrate.api.nvidia.com/v1": "nvidia",
+    "https://api.groq.com/openai/v1": "groq",
+    "https://api.together.xyz/v1": "together",
+}
+
 PROVIDER_URLS: dict[str, str] = {
     "openrouter": "https://openrouter.ai/api/v1",
     "openai": "https://api.openai.com/v1",
@@ -41,7 +50,19 @@ PROVIDER_URLS: dict[str, str] = {
 
 
 def resolve_base_url(provider: str) -> str:
-    """Resolve the base URL for the given AI provider."""
+    """Resolve the base URL for the given AI provider.
+
+    Accepts either a provider name (e.g. 'openrouter') or a full URL
+    (e.g. 'https://openrouter.ai/api/v1') for convenience.
+    """
+    # Auto-detect: if the value looks like a URL, map it to the provider name
+    if provider.startswith("http"):
+        if provider in URL_TO_PROVIDER:
+            provider = URL_TO_PROVIDER[provider]
+        else:
+            # Treat unknown URLs as custom provider
+            return provider
+
     if provider not in PROVIDER_URLS:
         raise ValueError(
             f"Unknown AI_PROVIDER: '{provider}'. "
